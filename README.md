@@ -126,5 +126,3 @@ Entretien_Project/
 - For full details, see code comments and explore the project structure.
 
 ---
-
-**This single guide replaces all previous markdown documentation files.**
