@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from app.routes.auth import verify_token
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.database.database import get_db
@@ -11,7 +12,7 @@ router = APIRouter(prefix="/franchises", tags=["franchises"])
 
 
 @router.post("", response_model=FranchiseResponse)
-def create_franchise(franchise: FranchiseCreate, db: Session = Depends(get_db)):
+def create_franchise(franchise: FranchiseCreate, db: Session = Depends(get_db), _=Depends(verify_token)):
     db_franchise = db.query(Franchise).filter(Franchise.tax_number == franchise.tax_number).first()
     if db_franchise:
         raise HTTPException(status_code=400, detail="Tax number already registered")
@@ -29,7 +30,8 @@ def list_franchises(
     limit: int = Query(10, ge=1, le=100),
     search: str = Query(None),
     is_active: bool = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _=Depends(verify_token)
 ):
     """
     List franchises with pagination, search, and filtering
@@ -52,7 +54,7 @@ def list_franchises(
 
 
 @router.get("/stats", response_model=dict)
-def get_franchise_stats(db: Session = Depends(get_db)):
+def get_franchise_stats(db: Session = Depends(get_db), _=Depends(verify_token)):
     """Get franchise statistics"""
     total = db.query(func.count(Franchise.id)).scalar()
     active = db.query(func.count(Franchise.id)).filter(Franchise.is_active == True).scalar()
@@ -66,7 +68,7 @@ def get_franchise_stats(db: Session = Depends(get_db)):
 
 
 @router.get("/{franchise_id}", response_model=FranchiseResponse)
-def get_franchise(franchise_id: int, db: Session = Depends(get_db)):
+def get_franchise(franchise_id: int, db: Session = Depends(get_db), _=Depends(verify_token)):
     franchise = db.query(Franchise).filter(Franchise.id == franchise_id).first()
     if not franchise:
         raise HTTPException(status_code=404, detail="Franchise not found")
@@ -77,7 +79,8 @@ def get_franchise(franchise_id: int, db: Session = Depends(get_db)):
 def update_franchise(
     franchise_id: int,
     franchise_update: FranchiseUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _=Depends(verify_token)
 ):
     franchise = db.query(Franchise).filter(Franchise.id == franchise_id).first()
     if not franchise:
@@ -93,7 +96,7 @@ def update_franchise(
 
 
 @router.delete("/{franchise_id}")
-def delete_franchise(franchise_id: int, db: Session = Depends(get_db)):
+def delete_franchise(franchise_id: int, db: Session = Depends(get_db), _=Depends(verify_token)):
     franchise = db.query(Franchise).filter(Franchise.id == franchise_id).first()
     if not franchise:
         raise HTTPException(status_code=404, detail="Franchise not found")
@@ -108,7 +111,8 @@ def list_branches_for_franchise(
     franchise_id: int,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _=Depends(verify_token)
 ):
     """Alias route to list branches under a specific franchise.
     Mirrors GET /branches?franchise_id=... but matches the case study path.

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from app.routes.auth import verify_token
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.database.database import get_db
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/budgets", tags=["budgets"])
 
 
 @router.post("", response_model=BudgetResponse)
-def create_budget(payload: BudgetCreate, db: Session = Depends(get_db)):
+def create_budget(payload: BudgetCreate, db: Session = Depends(get_db), _=Depends(verify_token)):
     # period uniqueness per franchise/branch
     exists = (
         db.query(Budget)
@@ -51,6 +52,7 @@ def list_budgets(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
+    _=Depends(verify_token)
 ):
     q = db.query(Budget)
     if franchise_id is not None:
@@ -63,7 +65,7 @@ def list_budgets(
 
 
 @router.get("/{budget_id}", response_model=BudgetResponse)
-def get_budget(budget_id: int, db: Session = Depends(get_db)):
+def get_budget(budget_id: int, db: Session = Depends(get_db), _=Depends(verify_token)):
     b = db.query(Budget).get(budget_id)
     if not b:
         raise HTTPException(status_code=404, detail="Budget not found")
@@ -71,7 +73,7 @@ def get_budget(budget_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{budget_id}", response_model=BudgetResponse)
-def update_budget(budget_id: int, payload: BudgetUpdate, db: Session = Depends(get_db)):
+def update_budget(budget_id: int, payload: BudgetUpdate, db: Session = Depends(get_db), _=Depends(verify_token)):
     b = db.query(Budget).get(budget_id)
     if not b:
         raise HTTPException(status_code=404, detail="Budget not found")
@@ -84,7 +86,7 @@ def update_budget(budget_id: int, payload: BudgetUpdate, db: Session = Depends(g
 
 
 @router.delete("/{budget_id}")
-def delete_budget(budget_id: int, db: Session = Depends(get_db)):
+def delete_budget(budget_id: int, db: Session = Depends(get_db), _=Depends(verify_token)):
     b = db.query(Budget).get(budget_id)
     if not b:
         raise HTTPException(status_code=404, detail="Budget not found")
@@ -94,7 +96,7 @@ def delete_budget(budget_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{budget_id}/approve", response_model=BudgetResponse)
-def approve_budget(budget_id: int, db: Session = Depends(get_db)):
+def approve_budget(budget_id: int, db: Session = Depends(get_db), _=Depends(verify_token)):
     b = db.query(Budget).get(budget_id)
     if not b:
         raise HTTPException(status_code=404, detail="Budget not found")
@@ -107,7 +109,7 @@ def approve_budget(budget_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{budget_id}/reject", response_model=BudgetResponse)
-def reject_budget(budget_id: int, db: Session = Depends(get_db)):
+def reject_budget(budget_id: int, db: Session = Depends(get_db), _=Depends(verify_token)):
     b = db.query(Budget).get(budget_id)
     if not b:
         raise HTTPException(status_code=404, detail="Budget not found")
@@ -118,7 +120,7 @@ def reject_budget(budget_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{budget_id}/summary")
-def budget_summary(budget_id: int, db: Session = Depends(get_db)):
+def budget_summary(budget_id: int, db: Session = Depends(get_db), _=Depends(verify_token)):
     b = db.query(Budget).get(budget_id)
     if not b:
         raise HTTPException(status_code=404, detail="Budget not found")
@@ -145,6 +147,7 @@ def rollup(
     period: str,
     branch_id: int | None = None,
     db: Session = Depends(get_db),
+    _=Depends(verify_token)
 ):
     q = db.query(
         func.coalesce(func.sum(Budget.planned_amount), 0),
@@ -170,7 +173,7 @@ expenses_router = APIRouter(prefix="/expenses", tags=["expenses"])
 
 
 @expenses_router.post("", response_model=ExpenseResponse)
-def create_expense(payload: ExpenseCreate, db: Session = Depends(get_db)):
+def create_expense(payload: ExpenseCreate, db: Session = Depends(get_db), _=Depends(verify_token)):
     exp = Expense(**payload.dict())
     db.add(exp)
     # update related budget actuals if linked
@@ -191,6 +194,7 @@ def list_expenses(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
+    _=Depends(verify_token)
 ):
     q = db.query(Expense)
     if franchise_id is not None:
@@ -203,7 +207,7 @@ def list_expenses(
 
 
 @expenses_router.get("/{expense_id}", response_model=ExpenseResponse)
-def get_expense(expense_id: int, db: Session = Depends(get_db)):
+def get_expense(expense_id: int, db: Session = Depends(get_db), _=Depends(verify_token)):
     e = db.query(Expense).get(expense_id)
     if not e:
         raise HTTPException(status_code=404, detail="Expense not found")
@@ -211,7 +215,7 @@ def get_expense(expense_id: int, db: Session = Depends(get_db)):
 
 
 @expenses_router.delete("/{expense_id}")
-def delete_expense(expense_id: int, db: Session = Depends(get_db)):
+def delete_expense(expense_id: int, db: Session = Depends(get_db), _=Depends(verify_token)):
     e = db.query(Expense).get(expense_id)
     if not e:
         raise HTTPException(status_code=404, detail="Expense not found")

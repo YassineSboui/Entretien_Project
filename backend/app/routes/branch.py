@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from app.routes.auth import verify_token
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.models.franchise import Franchise
@@ -9,7 +10,7 @@ router = APIRouter(prefix="/branches", tags=["branches"])
 
 
 @router.post("", response_model=BranchResponse)
-def create_branch(branch: BranchCreate, db: Session = Depends(get_db)):
+def create_branch(branch: BranchCreate, db: Session = Depends(get_db), _=Depends(verify_token)):
     franchise = db.query(Franchise).filter(Franchise.id == branch.franchise_id).first()
     if not franchise:
         raise HTTPException(status_code=404, detail="Franchise not found")
@@ -22,7 +23,7 @@ def create_branch(branch: BranchCreate, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=list[BranchResponse])
-def list_branches(franchise_id: int = None, skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def list_branches(franchise_id: int = None, skip: int = 0, limit: int = 10, db: Session = Depends(get_db), _=Depends(verify_token)):
     query = db.query(Branch)
     if franchise_id:
         query = query.filter(Branch.franchise_id == franchise_id)
@@ -32,7 +33,7 @@ def list_branches(franchise_id: int = None, skip: int = 0, limit: int = 10, db: 
 
 
 @router.get("/{branch_id}", response_model=BranchResponse)
-def get_branch(branch_id: int, db: Session = Depends(get_db)):
+def get_branch(branch_id: int, db: Session = Depends(get_db), _=Depends(verify_token)):
     branch = db.query(Branch).filter(Branch.id == branch_id).first()
     if not branch:
         raise HTTPException(status_code=404, detail="Branch not found")
@@ -40,7 +41,7 @@ def get_branch(branch_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{branch_id}")
-def delete_branch(branch_id: int, db: Session = Depends(get_db)):
+def delete_branch(branch_id: int, db: Session = Depends(get_db), _=Depends(verify_token)):
     branch = db.query(Branch).filter(Branch.id == branch_id).first()
     if not branch:
         raise HTTPException(status_code=404, detail="Branch not found")
